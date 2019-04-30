@@ -1,10 +1,10 @@
-#Manejo de Datos
 library(readxl)
 library(dplyr)
 library(tidyr)
 
 #Graficos
 library(ggplot2)
+
 
 #Mapas
 library(maps)
@@ -110,7 +110,7 @@ datosPorcentajes <- porcentajeAnio %>%
 datosalgrafico <- inner_join(datosCantidades, datosPorcentajes, by = c("Año", "Genero", "Rol"))
 
 datosalgrafico %>%
-ggplot(aes(fill=Rol, y=cantidad, x=Genero)) +
+  ggplot(aes(fill=Rol, y=cantidad, x=Genero)) +
   geom_col(position = 'stack', width = .7) + 
   geom_text(data=subset(datosalgrafico,porcentaje != 0), aes(label=etiqueta), position = position_stack(vjust = 0.5), size = 3)+
   xlab("Años de las ediciones del CAI") + ylab("Cantidad de participantes") +
@@ -353,3 +353,46 @@ ProvinciaXGeneroXRol <- BDCAI20082018 %>%
   group_by(Provincia, Rol, Genero) %>%
   summarise(cantidad=n())%>%
   spread(key = Genero, value = cantidad) 
+
+
+#TODO: posición autores por genero, cantidad de paper por autor y por genero
+
+#Primeros autores
+PosicionAutor <- BDCAI20082018 %>%
+  filter(Genero != 'Sin Definir' & Rol == 'Autor') %>%
+  group_by(Año, Genero, NumeroAutor) %>%
+  summarise(cantidad=n())%>%
+  filter(NumeroAutor==1)%>%
+  spread(key = Genero, value = cantidad) %>%
+  mutate(Total=sum(c(Hombre, Mujer), na.rm=TRUE)) %>%
+  mutate(hombre_pct = Hombre / Total,
+         mujer_pct = Mujer / Total)
+
+#Productividad de los autores: se calcula el porcentaje de autores que tienen n cantidad de trabajos
+Productividadautores <- BDCAI20082018 %>%
+  filter(Genero != 'Sin Definir' & Rol == 'Autor') %>%
+  group_by(Genero, Nombre) %>%
+  summarise(cantidadPapers=n()) %>%
+  group_by(Genero, cantidadPapers) %>%
+  summarise(cantidad=n()) %>% 
+  spread(key = Genero, value = cantidad) %>%
+  replace_na(list(Hombre = 0, Mujer=0)) %>%
+  mutate(Total=Hombre+Mujer) %>%
+  mutate(hombre_pct = (Hombre / Total)*100,
+         mujer_pct = (Mujer / Total)*100) %>%
+  select(cantidadPapers, Hombre=hombre_pct, Mujer=mujer_pct)%>%
+  gather("Genero", "porcentaje", 2:3) %>%
+  filter(cantidadPapers<11)
+
+
+Productividadautores %>%
+  ggplot( aes(x=cantidadPapers, y=porcentaje, group=Genero, color=Genero)) +
+  geom_line(size=2) +
+  geom_point(size=4) +
+  xlab("Número de trabajos") +
+  ylab("Porcentaje")+
+  theme(legend.position="bottom", legend.text = element_text(size=16, face="bold"),
+        axis.text = element_text(size=14),
+        axis.title = element_text(size=16,face="bold"))+
+  scale_x_continuous(breaks=c(1:10))
+ 
