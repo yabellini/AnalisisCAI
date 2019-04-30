@@ -110,13 +110,15 @@ datosPorcentajes <- porcentajeAnio %>%
 datosalgrafico <- inner_join(datosCantidades, datosPorcentajes, by = c("Año", "Genero", "Rol"))
 
 datosalgrafico %>%
-  ggplot(aes(fill=Rol, y=cantidad, x=Genero)) +
+ggplot(aes(fill=Rol, y=cantidad, x=Genero)) +
   geom_col(position = 'stack', width = .7) + 
   geom_text(data=subset(datosalgrafico,porcentaje != 0), aes(label=etiqueta), position = position_stack(vjust = 0.5), size = 3)+
   xlab("Años de las ediciones del CAI") + ylab("Cantidad de participantes") +
-  theme(legend.position="bottom") +
+  theme(legend.position="bottom", legend.text = element_text(size=16, face="bold"),
+        axis.text = element_text(size=14),
+        axis.title = element_text(size=16,face="bold"),
+        strip.text.x = element_text(size=14, face = "bold")) +
   facet_grid(~ Año)
-
 
 
 # Stacked bar  grafico de participantes por género
